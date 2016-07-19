@@ -22,6 +22,7 @@ public class LevelState extends GameState {
     private final MultiVal multiVal;
     private final Score score;
     public GameStateManager gsm;
+    
     public LevelState (Canvas c, GameStateManager gsm) {
             //score
         this.score = new Score(0);
@@ -37,55 +38,22 @@ public class LevelState extends GameState {
         this.allTargets = new Target[] {goodTarg, badTarg1, badTarg2, badTarg3};
 
         this.gsm = gsm;
-        handleCollisionAndDuplicateVals(c);
-        
-    }
-    void handleMouse(Scene s, Canvas c) {
-        s.setOnMouseClicked(
-            new EventHandler<MouseEvent>() {
-                public void handle (MouseEvent e) {
-                    if (goodTarg.contains(e.getX(), e.getY())) {
-                        //update score
-                        score.addPoints(1);
-                        //set new values to multiply
-                        multiVal.setRandValueA();
-                        multiVal.setRandValueB();
-
-                            //update targets with new values
-                        goodTarg.setValue(multiVal.getResult());
-                        for (BadTarget bT : badTargets) {
-                            bT.setValue(multiVal.getFakeResult());
-                        }
-
-                        for (Target t : allTargets) {
-                            t.randomizeTarget(c);
-                        }
-                        handleCollisionAndDuplicateVals(c);
-                        //TESTING
-                        for (int i=0; i<allTargets.length; i++) {
-                        System.out.println("Obiekt "+allTargets[i].getValue()+" X: "+allTargets[i].getCenterX()+ " Y: "+allTargets[i].getCenterY());
-                        }
-                    }
-                }
-            }
-        );
-    }
+        this.handleCollisionAndDuplicateVals(c);
+    };
+    
     private void handleCollisionAndDuplicateVals(Canvas c) {
-        System.out.println("NEW");
         //COLLISION DETECTION THAT WORKS!
         for (int i=0; i<allTargets.length; i++) {
             if(i!=0) {
                 for (int j=i; j>0; j--) {
                     //TO DO HANDLE COLLISION DETECTION ON TARGET INITIALIZATION
                     //handles target collisons
-                    System.out.println("Checked pair: "+allTargets[i].getValue()+" "+allTargets[j-1].getValue());
                     while (isCollision(allTargets[j-1].getCenterX(),
                                             allTargets[i].getCenterX(),
                                             allTargets[j-1].getCenterY(),
                                             allTargets[i].getCenterY(),
                                             allTargets[j-1].getRadius(),
                                             allTargets[i].getRadius())) {
-                        System.out.println("Pair: "+allTargets[i].getValue()+" "+allTargets[j-1].getValue());
                         allTargets[i].randomizeTarget(c);
                         j=i;
                     }
@@ -103,7 +71,67 @@ public class LevelState extends GameState {
         double yDif = y1 - y2;
         double distanceSquared = xDif * xDif + yDif * yDif;
         return distanceSquared < (r1 + r2) * (r1 + r2);
-    };  
+    }
+    
+    private void resetTargs(Canvas c) {
+        //set new values to multiply
+        multiVal.setRandValueA();
+        multiVal.setRandValueB();
+
+        //update targets with new values
+        goodTarg.setValue(multiVal.getResult());
+        for (BadTarget bT : badTargets) {
+            bT.setValue(multiVal.getFakeResult());
+        }
+        //randomize positions
+        for (Target t : allTargets) {
+            t.randomizeTarget(c);
+        }
+        //fix intersections
+        handleCollisionAndDuplicateVals(c);
+    }
+    
+    private boolean badTargClicked(MouseEvent e) {
+        boolean badTargClicked = false;
+        for (BadTarget bT : badTargets) {
+            if(bT.contains(e.getX(), e.getY())) {
+                badTargClicked = true;
+            }
+        }
+        return badTargClicked;
+    }
+    
+    private void menuExit(Canvas c) {
+        gsm.setState(0);
+        score.setPoints(0);
+        resetTargs(c);
+    }
+    
+    void handleMouse(Scene s, Canvas c) {
+        s.setOnMouseClicked(
+            new EventHandler<MouseEvent>() {
+                public void handle (MouseEvent e) {
+                    if (goodTarg.contains(e.getX(), e.getY())) {
+                        //update score
+                        score.setPoints(score.getPoints()+1);
+                        resetTargs(c);
+                        System.out.println("Good target chosen points +1");
+                    } else if (badTargClicked(e)) {
+                        score.setPoints(0);
+                        System.out.println("Bad target chosen point ==0");
+                    } else {
+                        score.setPoints(score.getPoints()-1);
+                        if (score.getPoints()<0) {
+                            menuExit(c);
+                            System.out.println("Point below 0 menu exit");
+                        }
+                        System.out.println("No target chosen points -1");
+                    }
+                }
+            }
+        );
+    }
+    
     void handleKeyboard(Scene s, Canvas c) {
         ArrayList<String> input = new ArrayList<String>();
         s.setOnKeyPressed(
@@ -116,23 +144,7 @@ public class LevelState extends GameState {
                         input.add( code );
                     }
                     if (input.contains("ESCAPE")) {
-                        gsm.setState(0);
-                        score.setPoints(0);
-                        multiVal.setRandValueA();
-                        multiVal.setRandValueB();
-                        goodTarg.setValue(multiVal.getResult());
-                        for (Target t : allTargets) {
-                            t.randomizeTarget(c);
-                        }
-                            //update targets with new values
-                        goodTarg.setValue(multiVal.getResult());
-                        for (BadTarget bT : badTargets) {
-                            bT.setValue(multiVal.getFakeResult());
-                        }
-                        for (Target t : allTargets) {
-                                    t.randomizeTarget(c);
-                                }
-                        handleCollisionAndDuplicateVals(c);
+                        menuExit(c);
                     }
                 }
             });

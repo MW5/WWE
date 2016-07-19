@@ -20,9 +20,6 @@ public class Score {
     public int getPoints() {
         return points;
     }
-    public void addPoints(int p) {
-        points += p;
-    }
     public void draw(GraphicsContext gc) {
         gc.setFont(font);
         gc.setTextAlign(TextAlignment.LEFT);
